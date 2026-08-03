@@ -10,6 +10,8 @@ const placeholder = document.querySelector("#placeholder");
 const status = document.querySelector("#status");
 
 let currentImage = "";
+let currentFormat = "jpeg";
+let currentExtension = "jpg";
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -41,13 +43,17 @@ form.addEventListener("submit", async (event) => {
     }
 
     currentImage = data.image;
+    currentFormat = data.format || "jpeg";
+    currentExtension = data.extension || "jpg";
     resultImage.src = currentImage;
     resultImage.alt = `Generated image for: ${prompt}`;
     resultImage.hidden = false;
     placeholder.hidden = true;
     downloadButton.disabled = false;
     printButton.disabled = false;
-    setStatus(`Done — ${data.size} PNG generated with ${data.model}.`);
+    setStatus(
+      `Done — ${data.size} ${currentFormat.toUpperCase()} generated with ${data.model}.`
+    );
   } catch (error) {
     setStatus(error.message || "Image generation failed.", true);
   } finally {
@@ -60,7 +66,7 @@ downloadButton.addEventListener("click", () => {
 
   const link = document.createElement("a");
   link.href = currentImage;
-  link.download = `square-image-${Date.now()}.png`;
+  link.download = `square-image-${Date.now()}.${currentExtension}`;
   document.body.append(link);
   link.click();
   link.remove();
