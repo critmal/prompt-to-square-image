@@ -16,6 +16,8 @@ const contentTypes = new Map([
   [".css", "text/css; charset=utf-8"],
   [".js", "text/javascript; charset=utf-8"],
   [".json", "application/json; charset=utf-8"],
+  [".jpg", "image/jpeg"],
+  [".jpeg", "image/jpeg"],
   [".png", "image/png"],
   [".svg", "image/svg+xml"],
   [".ico", "image/x-icon"],
@@ -89,7 +91,8 @@ async function handleGenerate(req, res) {
         prompt,
         size: "1024x1024",
         quality,
-        output_format: "png",
+        output_format: "jpeg",
+        output_compression: 85,
         n: 1,
       }),
     });
@@ -117,9 +120,11 @@ async function handleGenerate(req, res) {
     }
 
     return sendJson(res, 200, {
-      image: `data:image/png;base64,${base64Image}`,
+      image: `data:image/jpeg;base64,${base64Image}`,
       model,
       size: "1024x1024",
+      format: "jpeg",
+      extension: "jpg",
     });
   } catch (error) {
     console.error("Image generation failed:", error);
