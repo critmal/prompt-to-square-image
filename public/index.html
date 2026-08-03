@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Generate a square image from a text prompt and save it as a square PDF for printing.">
+  <title>Square Image Printer</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="intro">
+      <p class="eyebrow">Prompt → square image → square PDF</p>
+      <h1>Square Image Printer</h1>
+      <p class="lede">
+        Describe an image, generate it with OpenAI, then open a truly square print page and choose
+        <strong>Save as PDF</strong>.
+      </p>
+    </section>
+
+    <section class="workspace" aria-label="Square image generator">
+      <form id="generator-form" class="panel controls">
+        <label for="prompt">Image prompt</label>
+        <textarea
+          id="prompt"
+          name="prompt"
+          maxlength="3000"
+          required
+          placeholder="Example: A clean flat illustration of a cheerful orange robot watering a small balcony garden, simple shapes, white background"
+        ></textarea>
+
+        <div class="field-row">
+          <div>
+            <label for="quality">Image quality</label>
+            <select id="quality" name="quality">
+              <option value="low">Low — fastest</option>
+              <option value="medium" selected>Medium — balanced</option>
+              <option value="high">High — best detail</option>
+              <option value="auto">Auto</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="print-size">Square print size</label>
+            <select id="print-size" name="print-size">
+              <option value="4">4 × 4 inches</option>
+              <option value="5">5 × 5 inches</option>
+              <option value="6" selected>6 × 6 inches</option>
+              <option value="8">8 × 8 inches</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="generate-button" class="primary" type="submit">
+          Generate square image
+        </button>
+
+        <p id="status" class="status" role="status" aria-live="polite">
+          Your API key stays on the server and is never sent to the browser.
+        </p>
+      </form>
+
+      <section class="panel output" aria-label="Generated image">
+        <div id="placeholder" class="placeholder">
+          <span>1:1</span>
+          <p>Your generated image will appear here.</p>
+        </div>
+
+        <img id="result-image" alt="Generated from your prompt" hidden>
+
+        <div class="actions">
+          <button id="download-button" type="button" disabled>Download PNG</button>
+          <button id="print-button" class="primary" type="button" disabled>
+            Print square / Save PDF
+          </button>
+        </div>
+      </section>
+    </section>
+
+    <p class="footnote">
+      In the browser print dialog, select <strong>Save as PDF</strong>, use 100% scale, and disable
+      headers and footers.
+    </p>
+  </main>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
