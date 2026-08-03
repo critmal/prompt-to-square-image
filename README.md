@@ -1,6 +1,6 @@
 # Prompt to Square Image
 
-A small Node.js web app that:
+A small, dependency-free Node.js web app that:
 
 1. accepts a text prompt,
 2. generates a **1024 × 1024** PNG through the OpenAI Image API,
@@ -15,12 +15,11 @@ The API key previously pasted into chat should be treated as compromised. Revoke
 
 ## Run locally
 
-Requirements: Node.js 20 or newer.
+Requirement: Node.js 20 or newer. No package installation is required.
 
 ```bash
 git clone https://github.com/critmal/prompt-to-square-image.git
 cd prompt-to-square-image
-npm install
 ```
 
 Copy the environment template:
