@@ -2,15 +2,14 @@ import http from "node:http";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import generateHandler from "./api/generate.js";
+
+const projectDirectory = path.dirname(fileURLToPath(import.meta.url));
+const publicDirectory = path.join(projectDirectory, "public");
 
 await loadLocalEnv();
 
 const port = Number(process.env.PORT || 3000);
-const publicDirectory = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "public"
-);
-
 const contentTypes = new Map([
   [".html", "text/html; charset=utf-8"],
   [".css", "text/css; charset=utf-8"],
@@ -25,121 +24,47 @@ const contentTypes = new Map([
 
 const server = http.createServer(async (req, res) => {
   setSecurityHeaders(res);
+  addVercelResponseHelpers(res);
 
   try {
     const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
 
-    if (req.method === "POST" && requestUrl.pathname === "/api/generate") {
-      return await handleGenerate(req, res);
+    if (requestUrl.pathname === "/api/generate") {
+      if (req.method === "POST") {
+        try {
+          req.body = await readJsonBody(req, 32 * 1024);
+        } catch (error) {
+          return res.status(error.statusCode || 400).json({
+            error: error.message || "Invalid request body.",
+          });
+        }
+      }
+
+      return await generateHandler(req, res);
     }
 
     if (req.method === "GET" || req.method === "HEAD") {
       return await serveStatic(requestUrl.pathname, req.method === "HEAD", res);
     }
 
-    return sendJson(res, 405, { error: "Method not allowed." });
+    return res.status(405).json({ error: "Method not allowed." });
   } catch (error) {
     console.error(error);
-    return sendJson(res, 500, { error: "Unexpected server error." });
+    return res.status(500).json({ error: "Unexpected server error." });
   }
 });
 
 server.listen(port, () => {
-  console.log(`Square image generator running at http://localhost:${port}`);
+  console.log(`Thermal square image generator running at http://localhost:${port}`);
 });
 
-async function handleGenerate(req, res) {
-  res.setHeader("Cache-Control", "no-store");
-
-  let body;
-  try {
-    body = await readJsonBody(req, 32 * 1024);
-  } catch (error) {
-    return sendJson(res, error.statusCode || 400, {
-      error: error.message || "Invalid request body.",
-    });
-  }
-
-  const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
-  const allowedQualities = new Set(["low", "medium", "high", "auto"]);
-  const quality = allowedQualities.has(body?.quality) ? body.quality : "medium";
-
-  if (!prompt) {
-    return sendJson(res, 400, { error: "Please enter an image prompt." });
-  }
-
-  if (prompt.length > 3000) {
-    return sendJson(res, 400, { error: "Keep the prompt under 3,000 characters." });
-  }
-
-  if (!process.env.OPENAI_API_KEY) {
-    return sendJson(res, 500, {
-      error: "OPENAI_API_KEY is missing. Add it to your local .env file and restart the server.",
-    });
-  }
-
-  try {
-    const model = process.env.OPENAI_IMAGE_MODEL || "gpt-image-1";
-    const openAIResponse = await fetch("https://api.openai.com/v1/images/generations", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        prompt,
-        size: "1024x1024",
-        quality,
-        output_format: "jpeg",
-        output_compression: 85,
-        n: 1,
-      }),
-    });
-
-    const payload = await openAIResponse.json().catch(() => null);
-
-    if (!openAIResponse.ok) {
-      const message =
-        payload?.error?.message ||
-        `OpenAI returned HTTP ${openAIResponse.status}.`;
-
-      return sendJson(
-        res,
-        openAIResponse.status >= 500 ? 502 : openAIResponse.status,
-        { error: message }
-      );
-    }
-
-    const base64Image = payload?.data?.[0]?.b64_json;
-
-    if (!base64Image) {
-      return sendJson(res, 502, {
-        error: "OpenAI did not return image data.",
-      });
-    }
-
-    return sendJson(res, 200, {
-      image: `data:image/jpeg;base64,${base64Image}`,
-      model,
-      size: "1024x1024",
-      format: "jpeg",
-      extension: "jpg",
-    });
-  } catch (error) {
-    console.error("Image generation failed:", error);
-    return sendJson(res, 502, {
-      error: "Could not reach OpenAI. Check your internet connection and try again.",
-    });
-  }
-}
-
 async function serveStatic(pathname, isHeadRequest, res) {
-  const relativePath = pathname === "/" ? "index.html" : decodeURIComponent(pathname).replace(/^\/+/, "");
+  const relativePath =
+    pathname === "/" ? "index.html" : decodeURIComponent(pathname).replace(/^\/+/, "");
   const normalizedPath = path.normalize(relativePath);
 
   if (normalizedPath.startsWith("..") || path.isAbsolute(normalizedPath)) {
-    return sendJson(res, 403, { error: "Forbidden." });
+    return res.status(403).json({ error: "Forbidden." });
   }
 
   const filePath = path.join(publicDirectory, normalizedPath);
@@ -156,11 +81,27 @@ async function serveStatic(pathname, isHeadRequest, res) {
     return res.end(isHeadRequest ? undefined : file);
   } catch (error) {
     if (error.code === "ENOENT" || error.code === "EISDIR") {
-      return sendJson(res, 404, { error: "Not found." });
+      return res.status(404).json({ error: "Not found." });
     }
 
     throw error;
   }
+}
+
+function addVercelResponseHelpers(res) {
+  res.status = (statusCode) => {
+    res.statusCode = statusCode;
+    return res;
+  };
+
+  res.json = (payload) => {
+    if (!res.headersSent) {
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+    }
+
+    res.end(JSON.stringify(payload));
+    return res;
+  };
 }
 
 function readJsonBody(req, maximumBytes) {
@@ -173,7 +114,6 @@ function readJsonBody(req, maximumBytes) {
       if (settled) return;
 
       receivedBytes += chunk.length;
-
       if (receivedBytes > maximumBytes) {
         settled = true;
         const error = new Error("Request body is too large.");
@@ -209,16 +149,6 @@ function readJsonBody(req, maximumBytes) {
   });
 }
 
-function sendJson(res, statusCode, payload) {
-  if (res.headersSent) return res.end();
-
-  res.writeHead(statusCode, {
-    "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store",
-  });
-  return res.end(JSON.stringify(payload));
-}
-
 function setSecurityHeaders(res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "no-referrer");
@@ -231,8 +161,7 @@ function setSecurityHeaders(res) {
 
 async function loadLocalEnv() {
   try {
-    const envPath = path.join(path.dirname(fileURLToPath(import.meta.url)), ".env");
-    const contents = await readFile(envPath, "utf8");
+    const contents = await readFile(path.join(projectDirectory, ".env"), "utf8");
 
     for (const line of contents.split(/\r?\n/)) {
       const trimmed = line.trim();
