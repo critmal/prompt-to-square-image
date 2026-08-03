@@ -1,0 +1,19 @@
+{
+  "name": "prompt-to-square-image",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generate square images from text prompts and save them as square print-to-PDF pages.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "check": "node --check server.js && node --check public/app.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}
