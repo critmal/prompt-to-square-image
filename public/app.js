@@ -24,7 +24,7 @@ form.addEventListener("submit", async (event) => {
   }
 
   setLoading(true);
-  setStatus("Generating a 1024 × 1024 image. This can take a little while.");
+  setStatus("Generating high-contrast black-and-white thermal artwork. This can take a little while.");
 
   try {
     const response = await fetch("/api/generate", {
@@ -46,13 +46,13 @@ form.addEventListener("submit", async (event) => {
     currentFormat = data.format || "jpeg";
     currentExtension = data.extension || "jpg";
     resultImage.src = currentImage;
-    resultImage.alt = `Generated image for: ${prompt}`;
+    resultImage.alt = `Thermal-printer-ready black-and-white image for: ${prompt}`;
     resultImage.hidden = false;
     placeholder.hidden = true;
     downloadButton.disabled = false;
     printButton.disabled = false;
     setStatus(
-      `Done — ${data.size} ${currentFormat.toUpperCase()} generated with ${data.model}.`
+      `Done — thermal-ready black-and-white ${data.size} ${currentFormat.toUpperCase()} generated with ${data.model}.`
     );
   } catch (error) {
     setStatus(error.message || "Image generation failed.", true);
@@ -66,7 +66,7 @@ downloadButton.addEventListener("click", () => {
 
   const link = document.createElement("a");
   link.href = currentImage;
-  link.download = `square-image-${Date.now()}.${currentExtension}`;
+  link.download = `thermal-square-image-${Date.now()}.${currentExtension}`;
   document.body.append(link);
   link.click();
   link.remove();
@@ -88,7 +88,7 @@ printButton.addEventListener("click", () => {
     return;
   }
 
-  const safeTitle = `Square image — ${sideInches} × ${sideInches} inches`;
+  const safeTitle = `Thermal square image — ${sideInches} × ${sideInches} inches`;
 
   printWindow.document.open();
   printWindow.document.write(`<!doctype html>
@@ -121,13 +121,14 @@ printButton.addEventListener("click", () => {
       width: ${sideInches}in;
       height: ${sideInches}in;
       object-fit: cover;
+      filter: grayscale(1) contrast(1.35);
       print-color-adjust: exact;
       -webkit-print-color-adjust: exact;
     }
   </style>
 </head>
 <body>
-  <img src="${currentImage}" alt="Square generated artwork">
+  <img src="${currentImage}" alt="Square black-and-white thermal artwork">
   <script>
     const image = document.querySelector("img");
     const printWhenReady = () => {
@@ -146,13 +147,13 @@ printButton.addEventListener("click", () => {
   printWindow.document.close();
 
   setStatus(
-    `Opened a ${sideInches} × ${sideInches} inch page. Choose “Save as PDF” in the print dialog.`
+    `Opened a ${sideInches} × ${sideInches} inch black-and-white page. Choose “Save as PDF” in the print dialog.`
   );
 });
 
 function setLoading(isLoading) {
   generateButton.disabled = isLoading;
-  generateButton.textContent = isLoading ? "Generating…" : "Generate square image";
+  generateButton.textContent = isLoading ? "Generating…" : "Generate thermal-ready image";
 }
 
 function setStatus(message, isError = false) {
