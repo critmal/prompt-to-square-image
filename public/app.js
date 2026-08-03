@@ -10,8 +10,8 @@ const placeholder = document.querySelector("#placeholder");
 const status = document.querySelector("#status");
 
 let currentImage = "";
-let currentFormat = "jpeg";
-let currentExtension = "jpg";
+let currentFormat = "png";
+let currentExtension = "png";
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -24,7 +24,7 @@ form.addEventListener("submit", async (event) => {
   }
 
   setLoading(true);
-  setStatus("Generating high-contrast black-and-white thermal artwork. This can take a little while.");
+  setStatus("Generating high-contrast thermal artwork and converting it to true black and white.");
 
   try {
     const response = await fetch("/api/generate", {
@@ -42,9 +42,9 @@ form.addEventListener("submit", async (event) => {
       throw new Error(data.error || `Generation failed with HTTP ${response.status}.`);
     }
 
-    currentImage = data.image;
-    currentFormat = data.format || "jpeg";
-    currentExtension = data.extension || "jpg";
+    currentImage = await convertToThermalBitmap(data.image);
+    currentFormat = "png";
+    currentExtension = "png";
     resultImage.src = currentImage;
     resultImage.alt = `Thermal-printer-ready black-and-white image for: ${prompt}`;
     resultImage.hidden = false;
@@ -52,7 +52,7 @@ form.addEventListener("submit", async (event) => {
     downloadButton.disabled = false;
     printButton.disabled = false;
     setStatus(
-      `Done — thermal-ready black-and-white ${data.size} ${currentFormat.toUpperCase()} generated with ${data.model}.`
+      `Done — true black-and-white ${data.size} PNG prepared from ${data.model} output.`
     );
   } catch (error) {
     setStatus(error.message || "Image generation failed.", true);
@@ -121,7 +121,7 @@ printButton.addEventListener("click", () => {
       width: ${sideInches}in;
       height: ${sideInches}in;
       object-fit: cover;
-      filter: grayscale(1) contrast(1.35);
+      image-rendering: crisp-edges;
       print-color-adjust: exact;
       -webkit-print-color-adjust: exact;
     }
@@ -150,6 +150,51 @@ printButton.addEventListener("click", () => {
     `Opened a ${sideInches} × ${sideInches} inch black-and-white page. Choose “Save as PDF” in the print dialog.`
   );
 });
+
+async function convertToThermalBitmap(source) {
+  const image = await loadImage(source);
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth || 1024;
+  canvas.height = image.naturalHeight || 1024;
+
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) {
+    throw new Error("Your browser could not prepare the thermal bitmap.");
+  }
+
+  context.fillStyle = "#fff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels = imageData.data;
+  const threshold = 168;
+
+  for (let index = 0; index < pixels.length; index += 4) {
+    const luminance =
+      pixels[index] * 0.2126 +
+      pixels[index + 1] * 0.7152 +
+      pixels[index + 2] * 0.0722;
+    const value = luminance < threshold ? 0 : 255;
+
+    pixels[index] = value;
+    pixels[index + 1] = value;
+    pixels[index + 2] = value;
+    pixels[index + 3] = 255;
+  }
+
+  context.putImageData(imageData, 0, 0);
+  return canvas.toDataURL("image/png");
+}
+
+function loadImage(source) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("The generated image could not be processed."));
+    image.src = source;
+  });
+}
 
 function setLoading(isLoading) {
   generateButton.disabled = isLoading;
