@@ -3,22 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Generate a square image from a text prompt and save it as a square PDF for printing.">
-  <title>Square Image Printer</title>
+  <meta name="description" content="Generate a thermal-printer-friendly black-and-white square image and save it as a square PDF.">
+  <title>Thermal Square Image Printer</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <main class="shell">
     <section class="intro">
-      <p class="eyebrow">Prompt → square image → square PDF</p>
-      <h1>Square Image Printer</h1>
+      <p class="eyebrow">Prompt → thermal artwork → square PDF</p>
+      <h1>Thermal Square Image Printer</h1>
       <p class="lede">
-        Describe an image, generate it with OpenAI, then open a truly square print page and choose
-        <strong>Save as PDF</strong>.
+        Describe an image and OpenAI will generate it as bold, high-contrast black-and-white artwork
+        suitable for ESC/POS thermal printing. Until you have a printer, use
+        <strong>Print square / Save PDF</strong>.
       </p>
     </section>
 
-    <section class="workspace" aria-label="Square image generator">
+    <section class="workspace" aria-label="Thermal square image generator">
       <form id="generator-form" class="panel controls">
         <label for="prompt">Image prompt</label>
         <textarea
@@ -26,7 +27,7 @@
           name="prompt"
           maxlength="3000"
           required
-          placeholder="Example: A clean flat illustration of a cheerful orange robot watering a small balcony garden, simple shapes, white background"
+          placeholder="Example: A cheerful robot watering a balcony garden, bold clean outlines, centered composition"
         ></textarea>
 
         <div class="field-row">
@@ -41,7 +42,7 @@
           </div>
 
           <div>
-            <label for="print-size">Square print size</label>
+            <label for="print-size">Square PDF size</label>
             <select id="print-size" name="print-size">
               <option value="4">4 × 4 inches</option>
               <option value="5">5 × 5 inches</option>
@@ -52,21 +53,21 @@
         </div>
 
         <button id="generate-button" class="primary" type="submit">
-          Generate square image
+          Generate thermal-ready image
         </button>
 
         <p id="status" class="status" role="status" aria-live="polite">
-          Your API key stays on the server and is never sent to the browser.
+          Thermal mode is always enabled: black and white only, high contrast, bold lines, and no gradients. Your API key stays on the server.
         </p>
       </form>
 
-      <section class="panel output" aria-label="Generated image">
+      <section class="panel output" aria-label="Generated thermal image">
         <div id="placeholder" class="placeholder">
-          <span>1:1</span>
-          <p>Your generated image will appear here.</p>
+          <span>B/W</span>
+          <p>Your thermal-printer-ready image will appear here.</p>
         </div>
 
-        <img id="result-image" alt="Generated from your prompt" hidden>
+        <img id="result-image" alt="Generated black-and-white thermal artwork" hidden>
 
         <div class="actions">
           <button id="download-button" type="button" disabled>Download JPEG</button>
@@ -79,7 +80,7 @@
 
     <p class="footnote">
       In the browser print dialog, select <strong>Save as PDF</strong>, use 100% scale, and disable
-      headers and footers.
+      headers and footers. The PDF option remains available even without a thermal printer.
     </p>
   </main>
 
