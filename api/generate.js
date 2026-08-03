@@ -2,6 +2,17 @@ const ALLOWED_QUALITIES = new Set(["low", "medium", "high", "auto"]);
 const MAX_PROMPT_LENGTH = 3000;
 const MAX_RESPONSE_BYTES = 4_300_000;
 
+const THERMAL_PROMPT_PREFIX = `
+Create a square image designed specifically for ESC/POS-compatible monochrome thermal printing.
+Use only pure black and pure white, with a clean white background and solid black artwork.
+Do not use color, gray backgrounds, gradients, soft shadows, realistic lighting, subtle shading, transparency, or complex textures.
+Use very high contrast, bold clean outlines, large simple shapes, and clearly separated black and white areas.
+Avoid thin lines, tiny text, small details, dense cross-hatching, and elements that may disappear when converted to a one-bit thermal-printer bitmap.
+Keep the main subject centered with comfortable white margins and make the composition readable at receipt-printer resolution.
+If text is requested, keep it short, large, bold, and highly legible.
+The final result must look intentional as black-and-white thermal-printer artwork, not as a color image merely desaturated.
+`.trim();
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
@@ -31,6 +42,7 @@ export default async function handler(req, res) {
   }
 
   const model = process.env.OPENAI_IMAGE_MODEL || "gpt-image-1";
+  const thermalPrompt = `${THERMAL_PROMPT_PREFIX}\n\nUser request:\n${prompt}`;
 
   try {
     const openAIResponse = await fetch("https://api.openai.com/v1/images/generations", {
@@ -41,7 +53,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model,
-        prompt,
+        prompt: thermalPrompt,
         size: "1024x1024",
         quality,
         output_format: "jpeg",
@@ -82,6 +94,7 @@ export default async function handler(req, res) {
       size: "1024x1024",
       format: "jpeg",
       extension: "jpg",
+      thermalMode: true,
     });
   } catch (error) {
     console.error("Image generation failed:", error);
