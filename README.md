@@ -3,15 +3,31 @@
 A small, dependency-free Node.js web app that:
 
 1. accepts a text prompt,
-2. generates a **1024 × 1024** PNG through the OpenAI Image API,
-3. lets you download the PNG, and
+2. generates a **1024 × 1024** image through the OpenAI Image API,
+3. lets you download the generated JPEG, and
 4. opens a **square print page** so the browser can save a square PDF.
 
-The OpenAI API key stays on the Node.js server. It is never included in browser JavaScript or committed to GitHub.
+The OpenAI API key stays in a server-side environment variable. It is never included in browser JavaScript or committed to GitHub.
+
+## Deploy on Vercel
+
+1. Import `critmal/prompt-to-square-image` from GitHub into Vercel.
+2. Choose **Other** as the Framework Preset if Vercel does not select it automatically.
+3. Do not set a custom build command. The frontend is served from `public/` and the backend function is `api/generate.js`.
+4. Add these Environment Variables for Production, Preview, and Development:
+
+```env
+OPENAI_API_KEY=your_new_api_key_here
+OPENAI_IMAGE_MODEL=gpt-image-1
+```
+
+5. Deploy. If you add or change an environment variable after deployment, redeploy the project.
+
+The Vercel function is configured for a maximum duration of 300 seconds. The API returns a compressed JPEG rather than a PNG to stay below Vercel's function response-size limit.
 
 ## Security first
 
-The API key previously pasted into chat should be treated as compromised. Revoke it in the OpenAI dashboard and create a new key before running this project.
+The API key previously pasted into chat should be treated as compromised. Revoke it in the OpenAI dashboard and create a new key before deploying this project.
 
 ## Run locally
 
@@ -60,11 +76,10 @@ Open `http://localhost:3000`.
 4. In the print dialog, choose **Save as PDF**.
 5. Use 100% scale and disable browser headers and footers.
 
-The print page uses CSS `@page` with equal width and height, so Chromium-based browsers produce a square PDF page instead of an A4 page.
+The print page uses CSS `@page` with equal width and height, so Chromium-based browsers can produce a square PDF page instead of an A4 page.
 
 ## Notes
 
 - Generation is fixed to the square `1024x1024` API size.
-- The default model is `gpt-image-1`; change `OPENAI_IMAGE_MODEL` in `.env` if your OpenAI project has access to another GPT Image model.
-- Some GPT Image models may require organization verification.
+- The default model is `gpt-image-1`; change `OPENAI_IMAGE_MODEL` if your OpenAI project uses another compatible GPT Image model.
 - API usage is billed to the OpenAI project associated with your key.
